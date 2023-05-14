@@ -6,9 +6,11 @@ import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
@@ -19,18 +21,20 @@ import com.hzl.libyuvdemo.contacts.Contacts;
 import com.hzl.libyuvdemo.listener.CameraPictureListener;
 import com.hzl.libyuvdemo.manager.CameraSurfaceManager;
 import com.hzl.libyuvdemo.manager.CameraSurfaceView;
+import com.hzl.libyuvdemo.util.PermissionsChecker;
 import com.hzl.libyuvdemo.util.PermissionsUtils;
 import com.hzl.libyuvdemo.util.SPUtil;
 
 public class MainActivity extends Activity implements View.OnClickListener, CameraPictureListener {
 
-    private final int REQUEST_CODE_PERMISSIONS = 10;
-    private CameraSurfaceManager manager;
-    private CameraSurfaceView mSurfaceView;
-    private ImageView mBtnCamera;
-    private ImageView mBtnPicture;
-    private ImageView mBtnClose;
-    private ImageView ivImage;
+    private static final String TAG = "MainActivity : ";
+    private final int                  REQUEST_CODE_PERMISSIONS = 10;
+    private       CameraSurfaceManager manager;
+    private       CameraSurfaceView    mSurfaceView;
+    private       ImageView            mBtnCamera;
+    private       ImageView            mBtnPicture;
+    private       ImageView            mBtnClose;
+    private       ImageView            ivImage;
 
     public TextView tvCameraInfo;
     public EditText etScaleWidth;
@@ -39,6 +43,9 @@ public class MainActivity extends Activity implements View.OnClickListener, Came
     public EditText etCropStartY;
     public EditText etCropWidth;
     public EditText etCropHeight;
+    private PermissionsChecker mPermissionsChecker;
+
+    String[] PERMISSIONS = {"android.permission.READ_PHONE_STATE", "android.permission.ACCESS_COARSE_LOCATION", "android.permission.ACCESS_FINE_LOCATION", "android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE", "android.permission.CAMERA"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,27 +55,28 @@ public class MainActivity extends Activity implements View.OnClickListener, Came
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
         }
-        //权限申请使用
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-            final String[] PERMISSIONS = new String[]{Manifest.permission.CAMERA};
-            PermissionsUtils.checkAndRequestMorePermissions(this, PERMISSIONS, REQUEST_CODE_PERMISSIONS,
-                    new PermissionsUtils.PermissionRequestSuccessCallBack() {
 
-                        @Override
-                        public void onHasPermission() {
-                            setContentView(R.layout.activity_main);
-                            initView();
-                        }
-                    });
+        setContentView(R.layout.activity_main);
+        startCheckPermission();
+        initView();
+
+    }
+
+    private void startCheckPermission() {
+        mPermissionsChecker = new PermissionsChecker(MainActivity.this);
+        if (mPermissionsChecker.lacksPermissions(PERMISSIONS)) {
+            ActivityCompat.requestPermissions(MainActivity.this, PERMISSIONS, 1);
         }
+
+
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
         if (PermissionsUtils.isPermissionRequestSuccess(grantResults)) {
-            setContentView(R.layout.activity_main);
-            initView();
+           // initView();
         }
     }
 
@@ -100,8 +108,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Came
 
     private void initCameraInfo() {
         //摄像头预览设置
-        int width = (int) SPUtil.get(Contacts.CAMERA_WIDTH, 0);
-        int height = (int) SPUtil.get(Contacts.CAMERA_HEIGHT, 0);
+        int width        = (int) SPUtil.get(Contacts.CAMERA_WIDTH, 0);
+        int height       = (int) SPUtil.get(Contacts.CAMERA_HEIGHT, 0);
         int morientation = (int) SPUtil.get(Contacts.CAMERA_Morientation, 0);
         tvCameraInfo.setText(String.format("摄像头预览大小:%d*%d\n旋转的角度:%d度", width, height, morientation));
 
@@ -175,11 +183,18 @@ public class MainActivity extends Activity implements View.OnClickListener, Came
         super.onResume();
         manager.onResume();
         initCameraInfo();
+
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+        manager.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
         manager.onStop();
     }
 }

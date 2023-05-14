@@ -18,9 +18,14 @@ import java.util.List;
 @SuppressWarnings("deprecation")
 public class CameraUtil {
 
-    private Camera mCamera;
+    private Camera  mCamera;
     private boolean isFocusing;  //是否正在对焦
     private boolean isStartPreview; //是否已经开始预览了
+    /**
+     * 预览的一个摄像头画面大小，默认为1080p，如果不支持的话就用摄像头默认的
+     */
+    private int cameraWidth  = 1920;
+    private int cameraHeight = 1080;
 
     /**
      * 摄像头的旋转角度
@@ -31,11 +36,7 @@ public class CameraUtil {
         return morientation;
     }
 
-    /**
-     * 预览的一个摄像头画面大小，默认为1080p，如果不支持的话就用摄像头默认的
-     */
-    private int cameraWidth = 1920;
-    private int cameraHeight = 1080;
+
 
     public int getCameraWidth() {
         return cameraWidth;
@@ -88,7 +89,7 @@ public class CameraUtil {
         Camera.CameraInfo info = new Camera.CameraInfo();
         Camera.getCameraInfo(cameraId, info);
         int rotation = MainApplication.getCurrentActivity().getWindowManager().getDefaultDisplay().getRotation();
-        int degrees = 0;
+        int degrees  = 0;
         switch (rotation) {
             case Surface.ROTATION_0:
                 degrees = 0;
@@ -102,6 +103,7 @@ public class CameraUtil {
             case Surface.ROTATION_270:
                 degrees = 270;
                 break;
+            default:
         }
         int result;
         if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
@@ -121,9 +123,10 @@ public class CameraUtil {
             //释放camera
             releaseCamera();
         }
-        Camera.CameraInfo info = new Camera.CameraInfo();
-        int cameraId = 0;
-        int numCameras = Camera.getNumberOfCameras();
+        Camera.CameraInfo info       = new Camera.CameraInfo();
+        int               cameraId   = 0;
+        int               numCameras = Camera.getNumberOfCameras();
+
         for (int i = 0; i < numCameras; i++) {
             Camera.getCameraInfo(i, info);
             if (info.facing == cameraType) {
